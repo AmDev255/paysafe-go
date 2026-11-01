@@ -1,0 +1,42 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build package artifact
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.21"
+      - name: Build package
+        run: |
+          go build ./... && go test ./... && mkdir -p dist && git archive --format=zip -o dist/source.zip HEAD
+      - uses: actions/upload-artifact@v4
+        with:
+          name: package
+          path: dist/*
+
+  # Publishing is intentionally disabled. Enable the job and add the registry credentials as
+  # repository secrets only after PaySafe approves the release.
+  publish:
+    name: Publish (disabled)
+    needs: build
+    if: ${{ false }}
+    runs-on: ubuntu-latest
+    environment: release
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: package
+      - name: Publish
+        run: echo "Go modules are served from the git tag; nothing to upload"
